@@ -3,7 +3,7 @@
 * program will introduce new keywords (struct, enum), and the handling of
 * heap memory allocations.
 *
-* Completion time: 20 hours
+* Completion time: 24 hours
 *
 * @author Brett Perry, Professor Acuna
 * @version 1.16.22
@@ -18,7 +18,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 //MACROS: CONSTANTS
 #define MAX_LEN 1024
-
+#define DATA_SIZE 1024
 
 ////////////////////////////////////////////////////////////////////////////////
 //DATA STRUCTURES
@@ -28,8 +28,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 //GLOBAL VARIABLES
 int total_credits;
-
-
+struct FILE;
+int checkForFile(const char *filename);
 
 //place to store course information
 struct CourseNode* head = NULL; //course_collection
@@ -99,16 +99,14 @@ void course_insert(struct CourseNode *new_node) {
 //Display the contents of the CourseCollection list with
 //format Subject Number Credits Teacher.
 void schedule_print(struct CourseNode* node) {
-    printf("\n\n------------------------------------------------------\n");
-    printf("Class Schedule\n");
-    printf("------------------------------------------------------\n");
+    printf("\n\nClass Schedule\n");
     struct CourseNode *iter = node;
     while (iter != NULL) {
         printf("course: %s%d\tteacher: %s\tcredits: %d\n",
                getSubjectName(iter->subject), iter->number, iter->teacher, iter->credits);
         iter = iter->next;
     }
-    printf("------------------------------------------------------\n\n");
+    printf("\n\n");
 }
 
 char *getSubjectName(Subject subject) {
@@ -130,22 +128,99 @@ char *getSubjectName(Subject subject) {
 //and keeps the collection sorted.
 
 void *course_drop(struct CourseNode *node) {
-    printf("Enter the course by subject and number (i.e. SER101\n");
-    printf("Please enter a choice ---> ");
-    if(node != NULL) {
-       struct CourseNode *temp = node;
-       node = node->next;
-       free(temp);
-    }
-    total_credits -= 3;
-}
+    int num;
+    Subject subj;
+    printf("Select the course you want to drop.");
+    printf("First, select the subject.\n");
+    printf("Press 1 CSE, Press 2 for EEE, Press 3 for EGR, Press 4 for SER\n");
+    printf("user input --> ");
+    scanf("%d", &subj);
+    printf("\nEnter the 3 digit course number\n");
+    printf("user input --> ");
+    scanf("%d", &num);
 
+    //iterate through course_collection until you find exact match
+    struct CourseNode* prev = NULL;
+    struct CourseNode* iter = node;
+
+    //if list is empty
+    if(iter == NULL) {
+        printf("ERROR: You're not enrolled in any classes.");
+        return NULL;
+    } else {
+        //iterate through list
+        while(iter->subject != subj && iter->number != num) {
+            //if match is last node
+            if(iter->next == NULL) {
+                printf("ERROR: You are not enrolled in the class you selected.");
+                return NULL;
+            } else {
+                //store iter to current node
+                prev = iter;
+                //move to next node
+                iter = iter->next;
+                printf("Course %s%d is dropped.\n", getSubjectName(subj), num);
+                total_credits -= 3;
+            }
+        }
+
+
+        //if match, update the node
+        if(iter == head) {
+            //change first to point to next node
+            head = head->next;
+        } else {
+            //bypass the current node
+            prev->next = iter->next;
+            total_credits -= 3;
+            printf("Course %s%d is dropped.\n", getSubjectName(subj), num);
+        }
+        return iter;
+    }
+}
 
 //Function checks if a data file exists, and load any courses that
 //it specifies.
-void schedule_load() {
+/*void schedule_load() {
+    int c;
+    char str[99];
+    FILE *fp;
+    //if data file exists
+    if((fp = fopen("schedule.txt", "r"))) {
+        //load courses it specifies
+        str = fgetc(fp);
+        while ((int) str != EOF) {
+            printf("%s", str);
+            fputs(str, fp);
+        }
+        printf("\n\n");
+        fclose(fp);
+    }
+    //sort courses
+}*/
 
+void schedule_save(struct CourseNode *node) {
+    FILE *fp;
+    int n;
+    fp = fopen("schedule.txt", "w");
+
+    if (fp == NULL) {
+        printf("ERROR: No data.\n");
+        exit(EXIT_FAILURE);
+    } else {
+        //saves content of course_collection to plain text file
+        while (node != NULL) {
+            fprintf(fp, "course: %s%d\tteacher: %s\tcredits: %d\n",
+                    getSubjectName(node->subject), node->number, node->teacher, node->credits);
+            node = node->next;
+        }
+    }
+    //if filename exists then override
+    printf("Course Schedule file has been saved.");
+    fclose(fp);
 }
+
+
 
 //main entry point. Starts the program by displaying a welcome and beginning an
 //input loop that displays a menu and processes user input. Pressing q quits.
@@ -155,6 +230,7 @@ int main() {
     printf("\n\nWelcome to ASU Class Schedule\n");
 
     //TODO: stuff goes here...
+    //schedule_load();
 
     //menu and input loop
     do {
@@ -176,6 +252,7 @@ int main() {
     } while (input_buffer != 'q');
 
     //TODO: stuff goes here...
+    schedule_save(head);
 
     return 0;
 }
@@ -206,7 +283,7 @@ void branching(char option) {
             break;
 
         case 'd':
-            //course_drop();
+            course_drop(head);
             break;
 
         case 's':
