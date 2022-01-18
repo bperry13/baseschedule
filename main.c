@@ -120,7 +120,8 @@ char *getSubjectName(Subject subject) {
         case (SER):
             return "SER";
         default:
-            return "XXX";
+            printf("ERROR: your selection was not in the scope.");
+            break;
     }
 }
 
@@ -159,8 +160,8 @@ void *course_drop(struct CourseNode *node) {
                 prev = iter;
                 //move to next node
                 iter = iter->next;
-                printf("Course %s%d is dropped.\n", getSubjectName(subj), num);
                 total_credits -= 3;
+                printf("Course %s%d is dropped.\n", getSubjectName(subj), num);
             }
         }
 
@@ -169,6 +170,8 @@ void *course_drop(struct CourseNode *node) {
         if(iter == head) {
             //change first to point to next node
             head = head->next;
+            total_credits -= 3;
+            printf("Course %s%d is dropped.\n", getSubjectName(subj), num);
         } else {
             //bypass the current node
             prev->next = iter->next;
@@ -199,24 +202,24 @@ void *course_drop(struct CourseNode *node) {
     //sort courses
 }*/
 
-void schedule_save(struct CourseNode *node) {
+void schedule_save() {
     FILE *fp;
-    int n;
     fp = fopen("schedule.txt", "w");
+    fprintf(fp, "------------------------------------------------------\n");
+    fprintf(fp, "Course Schedule\n");
+    fprintf(fp, "------------------------------------------------------\n");
 
-    if (fp == NULL) {
-        printf("ERROR: No data.\n");
-        exit(EXIT_FAILURE);
-    } else {
-        //saves content of course_collection to plain text file
-        while (node != NULL) {
-            fprintf(fp, "course: %s%d\tteacher: %s\tcredits: %d\n",
-                    getSubjectName(node->subject), node->number, node->teacher, node->credits);
-            node = node->next;
-        }
+    //saves content of course_collection to plain text file
+    while (head != NULL) {
+        fprintf(fp, "course: %s", getSubjectName(head->subject));
+        fprintf(fp, "%d\t", head->number);
+        fprintf(fp, "teacher: %s\t", head->teacher);
+        fprintf(fp, "credits: %d\n", head->credits);
+        head = head->next;
     }
+
     //if filename exists then override
-    printf("Course Schedule file has been saved.");
+    printf("Course Schedule file has been saved.\n\n");
     fclose(fp);
 }
 
@@ -252,7 +255,7 @@ int main() {
     } while (input_buffer != 'q');
 
     //TODO: stuff goes here...
-    schedule_save(head);
+
 
     return 0;
 }
@@ -265,8 +268,7 @@ void branching(char option) {
     switch (option) {
         case 'a':
             //get info from user
-            //SER=4, EGR=2, CSE=1, EEE=3
-            printf("Press 1 CSE, Press 2 for EGR, Press 3 for EEE, Press 4 for SER\n");
+            printf("Press 1 CSE, Press 2 for EEE, Press 2 for EGR, Press 4 for SER\n");
             struct CourseNode *temp = malloc(sizeof(struct CourseNode));
             printf("user input --> ");
             scanf("%d", &temp->subject);
@@ -291,10 +293,11 @@ void branching(char option) {
             break;
 
         case 'q':
+            schedule_save();
             while(head != NULL) {
                 temp = head;
                 head = head->next; //move front to next node
-                free(temp); //free malloc from removed node
+                free(temp); //free malloc from removed node`
             }
             // main loop will take care of this.
             break;
